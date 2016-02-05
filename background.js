@@ -18,5 +18,5 @@ chrome.runtime.onMessage.addListener( function(event) {
 });
 
 chrome.browserAction.onClicked.addListener(function(){
-    window.open("https://bitbucket.org/ejust/ejust/pull-requests/");
+    window.open("https://bitbucket.org/dashboard/pullrequests");
 });

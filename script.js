@@ -31,7 +31,7 @@ setTimeout(function() {
 var i = 0;
 chrome.runtime.sendMessage({ type:"conflicts", text: "0"});
 // script begins here
-$("#pullrequest-pjax .iterable-item").each(function(index) {
+$(".pullrequest-list .iterable-item").each(function(index) {
     console.log(index);
     var container = $(this);
     var self = $(this).find(".title.flex-content--column");
