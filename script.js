@@ -40,8 +40,9 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var prlink = self.find(".flex-content--primary .execute").attr("href");
     $.ajax(prlink + "/diff").done(
         function(data) {
-            var conflictIndex = data.indexOf("Conflict: File modified in both source and destination");
+            var conflictIndex = data.split("<strong>Conflict: File modified in both source and destination</strong>").length -1;
             if (conflictIndex > 0) {
+                var conflictStr = conflictIndex > 1 ?  " " + conflictIndex + " conflicts " : " 1 conflict ";
                 var userName = $(".aid-profile--name").text();
                 var conflictUserName = container.find(".user").find("span[title]").text();
                 var playSound = "";
@@ -54,10 +55,10 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                         i++;
                         console.log("conflicts: " + i);
                         chrome.runtime.sendMessage({ type:"conflicts", text: new String(i)});
-                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat"  title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>'+ playSound);
+                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat"  title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>'+ playSound);
                         container.css("background-color", "#FA98A9");
                     } else {
-                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>');
+                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>');
                     }
                 }
                } else {
