@@ -30,16 +30,42 @@ setTimeout(function() {
 //Counter Initialized to Zero
 var i = 0;
 chrome.runtime.sendMessage({ type:"conflicts", text: "0"});
+
+// function functionCheckMigrationScriptConflict(sourceBranch, targetBranch) {
+//     var result = sourceBranch + " -> " + targetBranch;
+//
+//     // https://bitbucket.org/ejust/ejust/src//src/main/resources/db/migration/?at=develop
+//     // TODO Compare the 2 branches
+//
+//     return result;
+// }
+
+
 // script begins here
 $(".pullrequest-list .iterable-item").each(function(index) {
-    console.log(index);
     var container = $(this);
-    var self = $(this).find(".title.flex-content--column");
+    var self = container.find(".title.flex-content--column");
     self.css("height","35px");
     self.find(".flex-content").css("height","35px");
     var prlink = self.find(".flex-content--primary .execute").attr("href");
+
+    $.ajax(prlink).done(function(data){
+
+        var sourceLinkContainer = $("#id_source_group", $.parseHTML(data));
+        var sourceLinkElem = sourceLinkContainer.find(".branch.unabridged");
+        var sourceBranchName = sourceLinkElem.find("a").attr("title");
+
+        var targetLinkContainer = $("#id_target_group", $.parseHTML(data));
+        var targetLinkElem = targetLinkContainer.find(".branch.unabridged");
+        var targetBranchName = targetLinkElem.find("a").attr("title");
+
+        self.find(".flex-content--primary").append("<br>" + sourceBranch + " -> " + targetBranch);
+    });
+
     $.ajax(prlink + "/diff").done(
         function(data) {
+            // branch unabridged a
+
             var conflictIndex = data.split("<strong>Conflict: File modified in both source and destination</strong>").length -1;
             if (conflictIndex > 0) {
                 var conflictStr = conflictIndex > 1 ?  " " + conflictIndex + " conflicts " : " 1 conflict ";
