@@ -59,7 +59,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         var targetLinkElem = targetLinkContainer.find(".branch.unabridged");
         var targetBranchName = targetLinkElem.find("a").attr("title");
 
-        self.find(".flex-content--primary").append("<br>" + sourceBranch + " -> " + targetBranch);
+        self.find(".flex-content--primary").append("<br>" + sourceBranchName + " -> " + targetBranchName);
     });
 
     $.ajax(prlink + "/diff").done(
