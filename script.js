@@ -137,7 +137,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
 
                 var conflictIndex = data.split("<strong>Conflict: File modified in both source and destination</strong>").length -1;
                 if (conflictIndex > 0) {
-                    var conflictStr = conflictIndex > 1 ?  " " + conflictIndex + " conflicts " : " 1 conflict ";
+                    var conflictStr = conflictIndex > 1 ?  " " + conflictIndex + " file conflicts " : " 1 conflict ";
                     var userName = $(".aid-profile--name").text();
                     var conflictUserName = container.find(".user").find("span[title]").text();
                     var playSound = "";
@@ -157,7 +157,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                         }
                     }
                    } else {
-                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">no conflicts</span></div>');
+                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">&nbsp;</span></div>');
                 }
             }
         );
