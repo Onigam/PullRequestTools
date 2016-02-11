@@ -51,7 +51,7 @@ function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, source
                     var destFilesContainer =  $("#source-list", $.parseHTML(data));
                     var destFiles = destFilesContainer.find(".name.filename").find("a");
 
-                    var scriptConflits = 0;
+                    var scriptConflicts = 0;
                     srcFiles.each(function(index){
                         var srcFileName = $(this).attr("title");
                         var srcScriptVersion = srcFileName.split("__")[0];
@@ -62,15 +62,16 @@ function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, source
                             var destScriptName = destFileName.split("__")[1];
                             if (srcScriptVersion == destScriptVersion) {
                                 if (srcScriptName !== destScriptName) {
-                                    scriptConflits++;
+                                    scriptConflicts++;
                                 }
                             }
                         });
                     });
 
-                    if (scriptConflits > 0) {
+                    if (scriptConflicts > 0) {
+                        var innerHTML =  scriptConflicts==1 ? "<span style='color:red;font-weight:bold;'> 1 SQL script to rename </span>" : "<span style='color:red;font-weight:bold;'> "+scriptConflicts+" SQL scripts to rename </span>";
                         self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
-                        .append("<span style='color:red;font-weight:bold;''> SQL </span>");
+                        .append(innerHTML);
                     }
 
                 });
