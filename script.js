@@ -27,18 +27,63 @@ setTimeout(function() {
     hideNotif();
 }, 15000);
 
-//Counter Initialized to Zero
+// Counter Initialized to Zero
 var i = 0;
 chrome.runtime.sendMessage({ type:"conflicts", text: "0"});
 
-// function functionCheckMigrationScriptConflict(sourceBranch, targetBranch) {
-//     var result = sourceBranch + " -> " + targetBranch;
-//
-//     // https://bitbucket.org/ejust/ejust/src//src/main/resources/db/migration/?at=develop
-//     // TODO Compare the 2 branches
-//
-//     return result;
-// }
+function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, sourceBranch, targetBranchLink, targetBranch, self) {
+    var result = sourceBranch + " -> " + targetBranch;
+
+    // Get the last commit number
+    $.ajax(sourceBranchLink).done(function(data){
+        var sourceBranchLinkElement = $("#branch-detail", $.parseHTML(data)).find(".aui-buttons > a");
+        var srcUrl = sourceBranchLinkElement.attr("href");
+        $.ajax(targetBranchLink).done(function(data){
+            var targetBranchLinkElement = $("#branch-detail", $.parseHTML(data)).find(".aui-buttons > a");
+            var destUrl = targetBranchLinkElement.attr("href");
+            // /src/main/resources/db/migration/
+            var srcUrlTab = srcUrl.split("?");
+            var destUrlTab = destUrl.split("?");
+            $.ajax(srcUrlTab[0]+migrationFileDir+"?"+srcUrlTab[1]).done(function(data){
+                var srcFilesContainer =  $("#source-list", $.parseHTML(data));
+                var srcFiles = srcFilesContainer.find(".name.filename").find("a");
+                $.ajax(destUrlTab[0]+migrationFileDir+"?"+destUrlTab[1]).done(function(data){
+                    var destFilesContainer =  $("#source-list", $.parseHTML(data));
+                    var destFiles = destFilesContainer.find(".name.filename").find("a");
+
+                    var scriptConflits = 0;
+                    srcFiles.each(function(index){
+                        var srcFileName = $(this).attr("title");
+                        var srcScriptVersion = srcFileName.split("__")[0];
+                        var srcScriptName = srcFileName.split("__")[1];
+                        destFiles.each(function(index){
+                            var destFileName = $(this).attr("title");
+                            var destScriptVersion = destFileName.split("__")[0];
+                            var destScriptName = destFileName.split("__")[1];
+                            if (srcScriptVersion == destScriptVersion) {
+                                if (srcScriptName !== destScriptName) {
+                                    scriptConflits++;
+                                }
+                            }
+                        });
+                    });
+
+                    if (scriptConflits > 0) {
+                        self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
+                        .append("<span style='color:red;font-weight:bold;''> SQL </span>");
+                    }
+
+                });
+            });
+        });
+    });/*
+    https://bitbucket.org/ejust/ejust/src/d6936475e7203a5f8e61ada5f830decdff7f7f46?at=EJ-838-payline-transaction-date
+
+    */
+    // TODO Compare the 2 branches
+
+    return result;
+}
 
 
 // script begins here
@@ -51,45 +96,74 @@ $(".pullrequest-list .iterable-item").each(function(index) {
 
     $.ajax(prlink).done(function(data){
 
-        var sourceLinkContainer = $("#id_source_group", $.parseHTML(data));
+        var prDom = $.parseHTML(data);
+
+        var sourceLinkContainer = $("#id_source_group", prDom);
         var sourceLinkElem = sourceLinkContainer.find(".branch.unabridged");
         var sourceBranchName = sourceLinkElem.find("a").attr("title");
+        var sourceBranchLink = sourceLinkElem.find("a").attr("href");
 
-        var targetLinkContainer = $("#id_target_group", $.parseHTML(data));
+        var targetLinkContainer = $("#id_target_group", prDom);
         var targetLinkElem = targetLinkContainer.find(".branch.unabridged");
         var targetBranchName = targetLinkElem.find("a").attr("title");
+        var targetBranchLink = targetLinkElem.find("a").attr("href");
+
+        $.ajax(prlink + "/diff").done(
+            function(data) {
+                // branch unabridged a
+                // Check migration files
+                var fileCommitedContainer = $("#commit-files-summary", $.parseHTML(data));
+                var files = fileCommitedContainer.find(".iterable-item");
+                var migrationFileToCheck = false;
+                var migrationFileDir = null;
+                files.each(function(index, value) {
+
+                    var filePath = $(this).attr("data-file-identifier");
+                    if (filePath){
+                        if (filePath.split("src/main/resources/db/migration/").length -1>0) {
+                            migrationFileToCheck = true;
+                            migrationFileDir = filePath.match(/(.*)[\/\\]/)[1]||'';
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }
+                });
+
+                if (migrationFileToCheck) {
+                    checkMigrationScriptConflict("/"+migrationFileDir+"/", sourceBranchLink, sourceBranchName, targetBranchLink, targetBranchName, self);
+                }
+
+                var conflictIndex = data.split("<strong>Conflict: File modified in both source and destination</strong>").length -1;
+                if (conflictIndex > 0) {
+                    var conflictStr = conflictIndex > 1 ?  " " + conflictIndex + " conflicts " : " 1 conflict ";
+                    var userName = $(".aid-profile--name").text();
+                    var conflictUserName = container.find(".user").find("span[title]").text();
+                    var playSound = "";
+                    console.log("userName=" + userName + " conflictUserName=" + conflictUserName);
+                    if (userName.trim() == conflictUserName.trim()) {
+                        playSound = '<video width="1" autoplay><source src="http://www.myinstants.com/media/sounds/the-simpsons-nelsons-haha.mp3" type="audio/mp4">p</video>';
+                    }
+                    if (self.find(".aid-profile")) {
+                        if (playSound!="") {
+                            i++;
+                            console.log("conflicts: " + i);
+                            chrome.runtime.sendMessage({ type:"conflicts", text: new String(i)});
+                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat"  title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>'+ playSound);
+                            container.css("background-color", "#FA98A9");
+                        } else {
+                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>');
+                        }
+                    }
+                   } else {
+                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">no conflicts</span></div>');
+                }
+            }
+        );
+
+
 
         self.find(".flex-content--primary").append("<br>" + sourceBranchName + " -> " + targetBranchName);
     });
 
-    $.ajax(prlink + "/diff").done(
-        function(data) {
-            // branch unabridged a
-
-            var conflictIndex = data.split("<strong>Conflict: File modified in both source and destination</strong>").length -1;
-            if (conflictIndex > 0) {
-                var conflictStr = conflictIndex > 1 ?  " " + conflictIndex + " conflicts " : " 1 conflict ";
-                var userName = $(".aid-profile--name").text();
-                var conflictUserName = container.find(".user").find("span[title]").text();
-                var playSound = "";
-                console.log("userName=" + userName + " conflictUserName=" + conflictUserName);
-                if (userName.trim() == conflictUserName.trim()) {
-                    playSound = '<video width="1" autoplay><source src="http://www.myinstants.com/media/sounds/the-simpsons-nelsons-haha.mp3" type="audio/mp4">p</video>';
-                }
-                if (self.find(".aid-profile")) {
-                    if (playSound!="") {
-                        i++;
-                        console.log("conflicts: " + i);
-                        chrome.runtime.sendMessage({ type:"conflicts", text: new String(i)});
-                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat"  title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>'+ playSound);
-                        container.css("background-color", "#FA98A9");
-                    } else {
-                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>');
-                    }
-                }
-               } else {
-                self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">no conflicts</span></div>');
-            }
-        }
-    );
 });
