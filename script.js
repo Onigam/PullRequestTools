@@ -93,7 +93,21 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var self = container.find(".title.flex-content--column");
     self.css("height","35px");
     self.find(".flex-content").css("height","35px");
-    var prlink = self.find(".flex-content--primary .execute").attr("href");
+    var execElem = self.find(".flex-content--primary .execute");
+    var prlink = execElem.attr("href");
+    var prId = /^#(\d+)\:.*$/g.exec(execElem.attr("title"))[1];
+    var author = container.find("td.user a").attr("title");
+    $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
+        for (i = 0; i < participants.length; i++) { 
+            if (participants[i]['display_name'] === author) {
+                if (participants[i]['approved']) {
+                    console.log("PR " + prId + " marked ready for review by " + author);
+                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Ready for review"><img src="http://marijnhaverbeke.nl/talks/ff2011/homer_ok.png" style="width:35px;height:35px;"></div>');
+                }
+                break;
+            }
+        }
+    });
 
     $.ajax(prlink).done(function(data){
 
