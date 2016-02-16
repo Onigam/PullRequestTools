@@ -69,9 +69,10 @@ function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, source
                     });
 
                     if (scriptConflicts > 0) {
-                        var innerHTML =  scriptConflicts==1 ? "<span style='color:red;font-weight:bold;'> 1 SQL script to rename </span>" : "<span style='color:red;font-weight:bold;'> "+scriptConflicts+" SQL scripts to rename </span>";
+                        var sqlScriptMsgTitle = scriptConflicts == 1 ? "1 SQL script to rename" : scriptConflicts + " SQL scripts to rename";
                         self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
-                        .append(innerHTML);
+                        .prepend('<div class="list-stat" title="' + sqlScriptMsgTitle + '"><img src="http://www.jesusat2am.com/public_html/jesusat2am.com/media/uploads//simpsons-babies-fight.jpg" style="width:57px;height:35px;"></div>')
+                        //.append(innerHTML);
                     }
 
                 });
