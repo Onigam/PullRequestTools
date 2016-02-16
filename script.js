@@ -69,9 +69,10 @@ function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, source
                     });
 
                     if (scriptConflicts > 0) {
+                        var maggieUrl = chrome.extension.getURL("img/script-conflict.png");
                         var sqlScriptMsgTitle = scriptConflicts == 1 ? "1 SQL script to rename" : scriptConflicts + " SQL scripts to rename";
                         self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
-                        .prepend('<div class="list-stat" title="' + sqlScriptMsgTitle + '"><img src="http://www.jesusat2am.com/public_html/jesusat2am.com/media/uploads//simpsons-babies-fight.jpg" style="width:57px;height:35px;"></div>');
+                        .prepend('<div class="list-stat" title="' + sqlScriptMsgTitle + '"><img src="'+maggieUrl+'" style="width:57px;height:35px;"></div>');
                         //.append(innerHTML);
                     } else {
                         self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
@@ -109,7 +110,8 @@ $(".pullrequest-list .iterable-item").each(function(index) {
             if (participants[i]['display_name'] === author) {
                 if (participants[i]['approved']) {
                     console.log("PR " + prId + " marked ready for review by " + author);
-                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Ready for review"><img src="http://marijnhaverbeke.nl/talks/ff2011/homer_ok.png" style="width:35px;height:35px;"></div>');
+                    var homerUrl = chrome.extension.getURL("img/homer_ok.png");
+                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Ready for review"><img src="'+homerUrl+'" style="width:35px;height:35px;"></div>');
                 }
                 break;
             }
@@ -167,14 +169,16 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                         playSound = '<video width="1" autoplay><source src="http://www.myinstants.com/media/sounds/the-simpsons-nelsons-haha.mp3" type="audio/mp4">p</video>';
                     }
                     if (self.find(".aid-profile")) {
+                        var nelsonUrl = chrome.extension.getURL("img/code-conflict.png");
+
                         if (playSound!="") {
                             i++;
                             console.log("conflicts: " + i);
                             chrome.runtime.sendMessage({ type:"conflicts", text: new String(i)});
-                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat"  title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>'+ playSound);
+                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat"  title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="'+nelsonUrl+'" style="width:35px;height:35px;"></div>'+ playSound);
                             container.css("background-color", "#FA98A9");
                         } else {
-                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="http://vignette4.wikia.nocookie.net/les-simpson-springfield/images/c/c9/Nelson_Icon.png/revision/latest?cb=20150622221328&path-prefix=fr" style="width:35px;height:35px;"></div>');
+                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="'+nelsonUrl+'" style="width:35px;height:35px;"></div>');
                         }
                     }
                    } else {

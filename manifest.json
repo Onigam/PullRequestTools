@@ -15,6 +15,9 @@
     "persistent": false,
     "scripts": ["background.js"]
 },
+"web_accessible_resources": [
+  "img/*.png"
+],
 "content_scripts": [
     {
       "matches": ["https://bitbucket.org/dashboard/pullrequests","https://bitbucket.org/*/*/pull-requests/"],
