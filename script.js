@@ -71,17 +71,13 @@ function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, source
                     if (scriptConflicts > 0) {
                         var maggieUrl = chrome.extension.getURL("img/script-conflict.png");
                         var sqlScriptMsgTitle = scriptConflicts == 1 ? "1 SQL script to rename" : scriptConflicts + " SQL scripts to rename";
-                        self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
-                        .prepend('<div class="list-stat" title="' + sqlScriptMsgTitle + '"><img src="'+maggieUrl+'" style="width:57px;height:35px;"></div>');
+                        self.find(".flex-content--secondary .pullrequest-stats")
+                        .prepend('<img  title="' + sqlScriptMsgTitle + '" src="'+maggieUrl+'" style="width:57px;height:35px;margin-right:10px;">');
                         //.append(innerHTML);
-                    } else {
-                        self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
-                        .prepend('<div class="list-stat">&nbsp;</div>');
                     }
 
                 }).fail(function(data){
-                    self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
-                    .prepend('<div class="list-stat">&nbsp;</div>');
+
                 });
             });
         });
@@ -111,7 +107,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                 if (participants[i]['approved']) {
                     console.log("PR " + prId + " marked ready for review by " + author);
                     var homerUrl = chrome.extension.getURL("img/homer_ok.png");
-                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Ready for review"><img src="'+homerUrl+'" style="width:35px;height:35px;"></div>');
+                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">');
                 }
                 break;
             }
@@ -175,15 +171,13 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                             i++;
                             console.log("conflicts: " + i);
                             chrome.runtime.sendMessage({ type:"conflicts", text: new String(i)});
-                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat"  title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="'+nelsonUrl+'" style="width:35px;height:35px;"></div>'+ playSound);
+                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;">'+ playSound);
                             container.css("background-color", "#FA98A9");
                         } else {
-                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">'+conflictStr+'</span></div><div class="list-stat" title="Conflict"><img src="'+nelsonUrl+'" style="width:35px;height:35px;"></div>');
+                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;">');
                         }
                     }
-                   } else {
-                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">&nbsp;</span></div>');
-                    }
+                   }
             }
         );
 
