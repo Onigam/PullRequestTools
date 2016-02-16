@@ -71,10 +71,16 @@ function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, source
                     if (scriptConflicts > 0) {
                         var sqlScriptMsgTitle = scriptConflicts == 1 ? "1 SQL script to rename" : scriptConflicts + " SQL scripts to rename";
                         self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
-                        .prepend('<div class="list-stat" title="' + sqlScriptMsgTitle + '"><img src="http://www.jesusat2am.com/public_html/jesusat2am.com/media/uploads//simpsons-babies-fight.jpg" style="width:57px;height:35px;"></div>')
+                        .prepend('<div class="list-stat" title="' + sqlScriptMsgTitle + '"><img src="http://www.jesusat2am.com/public_html/jesusat2am.com/media/uploads//simpsons-babies-fight.jpg" style="width:57px;height:35px;"></div>');
                         //.append(innerHTML);
+                    } else {
+                        self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
+                        .prepend('<div class="list-stat">&nbsp;</div>');
                     }
 
+                }).fail(function(data){
+                    self.find(".flex-content--secondary .pullrequest-stats .list-stat[title=Conflict]")
+                    .prepend('<div class="list-stat">&nbsp;</div>');
                 });
             });
         });
@@ -99,7 +105,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var prId = /^#(\d+)\:.*$/g.exec(execElem.attr("title"))[1];
     var author = container.find("td.user a").attr("title");
     $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
-        for (i = 0; i < participants.length; i++) { 
+        for (i = 0; i < participants.length; i++) {
             if (participants[i]['display_name'] === author) {
                 if (participants[i]['approved']) {
                     console.log("PR " + prId + " marked ready for review by " + author);
@@ -173,7 +179,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                     }
                    } else {
                     self.find(".flex-content--secondary .pullrequest-stats").prepend('<div class="list-stat" title="Conflict"><span style="width:35px;height:35px;">&nbsp;</span></div>');
-                }
+                    }
             }
         );
 
