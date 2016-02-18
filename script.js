@@ -101,7 +101,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var prlink = execElem.attr("href");
     var prId = /^#(\d+)\:.*$/g.exec(execElem.attr("title"))[1];
     var author = container.find("td.user a").attr("title");
-    var mergeable = container.find(".list-stat").has("a.approval-link").find(".count").html() > 2;
+    var mergeable = container.find(".list-stat").has("a.approval-link").find(".count").html() > 1;
     var userApproved = container.find(".list-stat").has("a.approved").length > 0;
     $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
         for (i = 0; i < participants.length; i++) {
