@@ -102,17 +102,16 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var prId = /^#(\d+)\:.*$/g.exec(execElem.attr("title"))[1];
     var author = container.find("td.user a").attr("title");
     var mergeable = container.find(".list-stat").has("a.approval-link").find(".count").html() > 2;
-    var donutUrl = chrome.extension.getURL("img/mergeable.png");
-    if (mergeable) {
-        self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="3 validations or more! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;">');
-    }
     $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
         for (i = 0; i < participants.length; i++) {
             if (participants[i]['display_name'] === author) {
                 if (participants[i]['approved']) {
                     // console.log("PR " + prId + " marked ready for review by " + author);
                     var homerUrl = chrome.extension.getURL("img/homer_ok.png");
-                    self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">');
+                    var donutUrl = chrome.extension.getURL("img/mergeable.png");
+                    var homerElement = mergeable ? '<img title="Ready for review with enough validations! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;">'
+                    : '<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">';
+                            self.find(".flex-content--secondary .pullrequest-stats").prepend(homerElement);
                 }
                 break;
             }
