@@ -111,7 +111,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                     // console.log("PR " + prId + " marked ready for review by " + author);
                     var homerUrl = chrome.extension.getURL("img/homer_ok.png");
                     var donutUrl = chrome.extension.getURL("img/mergeable.png");
-                    var homerElement = mergeable ? '<img title="Ready for review with enough validations! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;'+(!userMerger?'opacity:0.3;':'')+'">'
+                    var homerElement = mergeable ? '<img title="Ready for review with enough validations! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;'+(userMerger?'':userApproved?'display:none;':'opacity:0.3;')+'">'
                     : !userApproved ? '<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">' : undefined;
                     if (homerElement) {
                         self.find(".flex-content--secondary .pullrequest-stats").prepend(homerElement);
