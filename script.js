@@ -104,13 +104,14 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var mergeable = container.find(".list-stat").has("a.approval-link").find(".count").html() > 1;
     var userApproved = container.find(".list-stat").has("a.approved").length > 0;
     $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
+        var userMerger = $(".aid-profile--name").text().trim() === "Romain Fromi";
         for (i = 0; i < participants.length; i++) {
             if (participants[i]['display_name'] === author) {
                 if (participants[i]['approved']) {
                     // console.log("PR " + prId + " marked ready for review by " + author);
                     var homerUrl = chrome.extension.getURL("img/homer_ok.png");
                     var donutUrl = chrome.extension.getURL("img/mergeable.png");
-                    var homerElement = mergeable ? '<img title="Ready for review with enough validations! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;">'
+                    var homerElement = mergeable ? '<img title="Ready for review with enough validations! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;'+(!userMerger?'opacity:0.3;':'')+'">'
                     : !userApproved ? '<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">' : undefined;
                     if (homerElement) {
                         self.find(".flex-content--secondary .pullrequest-stats").prepend(homerElement);
