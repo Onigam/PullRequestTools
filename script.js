@@ -104,7 +104,6 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var userApproved = container.find(".list-stat").has("a.approved").length > 0;
     var approveCount = container.find(".list-stat").has("a.approval-link").find(".count").html();
     var mergeable = approveCount > 1;
-    var approvedByMeOnly = approveCount == 1 && userApproved;
     $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
         console.log("processing " + prId);
         var userName = $(".aid-profile--name").text().trim();
@@ -117,6 +116,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                 break;
             }
         }
+        var approvedByMeOnly = approveCount == 1 && authorApproved;
         var userIsAuthor = author === userName;
         var homerStartedUrl = chrome.extension.getURL("img/homer-started.png");
         var homerFinishedUrl = chrome.extension.getURL("img/homer-finished.png");
@@ -124,8 +124,8 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         var donutUrl = chrome.extension.getURL("img/mergeable.png");
         var homerElement = userIsAuthor && !authorApproved ? '<img title="You must still mark your pull request ready for review" src="'+homerStartedUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:1;">'
         : mergeable ? '<img title="Ready for review with enough validations! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;'+(userMerger?'':userApproved?'display:none;':'opacity:0.3;')+'">'
-        : approvedByMeOnly ? '<img title="Approved by me only. Somebody wants to validate? Please?" src="'+homerFinishedUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:0.3">'
-        : !userApproved ? '<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">' : undefined;
+        : userIsAuthor && approvedByMeOnly ? '<img title="Approved by me only. Somebody wants to validate? Please?" src="'+homerFinishedUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:0.3">'
+        : !userIsAuthor && authorApproved ? '<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">' : undefined;
         if (homerElement) {
             self.find(".flex-content--secondary .pullrequest-stats").prepend(homerElement);
         }
