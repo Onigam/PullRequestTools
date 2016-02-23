@@ -131,6 +131,19 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         }
     });
 
+    $.ajax(prlink + '/activity?_pjax=%23pr-tab-content').done(function(data) {
+        // old PR
+        var prDom = $.parseHTML('<div>'+data+'</div>');
+        var activity = $("#comments", prDom);
+        var prDatePlusAWeek = new Date(activity.find(".summary").has("span:contains('opened')").find("time").attr("datetime"));
+        prDatePlusAWeek.setDate(prDatePlusAWeek.getDate() + 7);
+        var now = new Date();
+        var oldRequestImgUrl = chrome.extension.getURL("img/old.jpg");
+        if(prDatePlusAWeek < now) {
+            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than a week old" src="'+oldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;">');
+        }
+    });
+
     $.ajax(prlink).done(function(data){
 
         var prDom = $.parseHTML(data);
