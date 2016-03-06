@@ -27,11 +27,23 @@ setTimeout(function() {
     hideNotif();
 }, 15000);
 
+// script begins here
+var merger = "Romain Fromi";
+
 // Counter Initialized to Zero
-var i = 0;
+var conflictsNb = 0;
 chrome.runtime.sendMessage({ type:"conflicts", text: "0"});
 
-function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, sourceBranch, targetBranchLink, targetBranch, self) {
+var isUserName = function(userNameToCompareTo) {
+    var userName = $(".aid-profile--name").text();
+    return userName.trim() === userNameToCompareTo.trim();
+};
+
+var getOpacity = function(important) {
+    return important ? "1" : "0.3";
+}
+
+var checkMigrationScriptConflict = function (migrationFileDir, sourceBranchLink, sourceBranch, targetBranchLink, targetBranch, self) {
     var result = sourceBranch + " -> " + targetBranch;
 
     // Get the last commit number
@@ -69,11 +81,12 @@ function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, source
                     });
 
                     if (scriptConflicts > 0) {
+                        var conflictUserName = self.find(".user").find("span[title]").text();
+                        var opacity = getOpacity(isUserName(conflictUserName));
                         var maggieUrl = chrome.extension.getURL("img/script-conflict.png");
                         var sqlScriptMsgTitle = scriptConflicts == 1 ? "1 SQL script to rename" : scriptConflicts + " SQL scripts to rename";
                         self.find(".flex-content--secondary .pullrequest-stats")
-                        .prepend('<img  title="' + sqlScriptMsgTitle + '" src="'+maggieUrl+'" style="width:57px;height:35px;margin-right:10px;">');
-                        //.append(innerHTML);
+                        .prepend('<img  title="' + sqlScriptMsgTitle + '" src="'+maggieUrl+'" style="width:57px;height:35px;margin-right:10px;opacity:' + opacity + '">');
                     }
 
                 }).fail(function(data){
@@ -81,17 +94,11 @@ function checkMigrationScriptConflict(migrationFileDir, sourceBranchLink, source
                 });
             });
         });
-    });/*
-    https://bitbucket.org/ejust/ejust/src/d6936475e7203a5f8e61ada5f830decdff7f7f46?at=EJ-838-payline-transaction-date
-
-    */
-    // TODO Compare the 2 branches
-
+    });
     return result;
 }
 
 
-// script begins here
 $(".pullrequest-list .iterable-item").each(function(index) {
     var container = $(this);
     var self = container.find(".title.flex-content--column");
@@ -105,19 +112,17 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var approveCount = container.find(".list-stat").has("a.approval-link").find(".count").html();
     var mergeable = approveCount > 1;
     $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
-        console.log("processing " + prId);
-        var userName = $(".aid-profile--name").text().trim();
-        var userMerger = userName === "Romain Fromi";
+        //console.log("processing PR #" + prId);
+        var userMerger = isUserName(merger);
         var authorApproved = false;
-        for (i = 0; i < participants.length; i++) {
+        for (var i = 0; i < participants.length; i++) {
             if (participants[i].display_name === author && participants[i].approved) {
-                // console.log("PR " + prId + " marked ready for review by its author " + author);
                 authorApproved = true;
                 break;
             }
         }
         var approvedByMeOnly = approveCount == 1 && authorApproved;
-        var userIsAuthor = author === userName;
+        var userIsAuthor = isUserName(author);
         var homerStartedUrl = chrome.extension.getURL("img/homer-started.png");
         var homerFinishedUrl = chrome.extension.getURL("img/homer-finished.png");
         var homerUrl = chrome.extension.getURL("img/homer_ok.png");
@@ -132,7 +137,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     });
 
     $.ajax(prlink + '/activity?_pjax=%23pr-tab-content').done(function(data) {
-        // old PR
+        // is it an old PR?
         var prDom = $.parseHTML('<div>'+data+'</div>');
         var activity = $("#comments", prDom);
         var prDate = new Date(activity.find(".summary").has("span:contains('opened')").find("time").attr("datetime"));
@@ -141,14 +146,14 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         var veryOldRequestImgUrl = chrome.extension.getURL("img/very-old.png");
         prDate.setDate(prDate.getDate() + 7);
         var prMoreThanOneWeekOld = prDate < now;
-        console.log(prMoreThanOneWeekOld);
         prDate.setDate(prDate.getDate() + 7);
         var prMoreThanTwoWeeksOld = prDate < now;
-        console.log(prMoreThanTwoWeeksOld);
+        var userMerger = isUserName(merger);
+        var opacity = getOpacity(userMerger);
         if(prMoreThanTwoWeeksOld) {
-            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 2 weeks old" src="'+veryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;">');
+            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 2 weeks old" src="'+veryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         } else if(prMoreThanOneWeekOld) {
-            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than a week old" src="'+oldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;">');
+            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than a week old" src="'+oldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         }
     });
 
@@ -168,7 +173,6 @@ $(".pullrequest-list .iterable-item").each(function(index) {
 
         $.ajax(prlink + "/diff").done(
             function(data) {
-                // branch unabridged a
                 // Check migration files
                 var fileCommitedContainer = $("#commit-files-summary", $.parseHTML(data));
                 var files = fileCommitedContainer.find(".iterable-item");
@@ -193,29 +197,19 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                 }
 
                 var conflictIndex = data.split("<strong>Conflict: File modified in both source and destination</strong>").length -1;
-                if (conflictIndex > 0) {
-                    var conflictStr = conflictIndex > 1 ?  " " + conflictIndex + " file conflicts " : " 1 conflict ";
-                    var userName = $(".aid-profile--name").text();
+                if (conflictIndex > 0 && self.find(".aid-profile")) {
+                    var conflictStr = conflictIndex > 1 ?  " " + conflictIndex + " file conflicts " : " 1 file conflict ";
+                    var nelsonUrl = chrome.extension.getURL("img/code-conflict.png");
                     var conflictUserName = container.find(".user").find("span[title]").text();
-                    var playSound = "";
-                    console.log("userName=" + userName + " conflictUserName=" + conflictUserName);
-                    if (userName.trim() == conflictUserName.trim()) {
-                        playSound = '<video width="1" autoplay><source src="http://www.myinstants.com/media/sounds/the-simpsons-nelsons-haha.mp3" type="audio/mp4">p</video>';
+                    if (isUserName(conflictUserName)) {
+                        conflictsNb++;
+                        var playSound = '<video width="1" autoplay><source src="http://www.myinstants.com/media/sounds/the-simpsons-nelsons-haha.mp3" type="audio/mp4">p</video>';
+                        chrome.runtime.sendMessage({ type:"conflicts", text: new String(conflictsNb)});
+                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;">'+ playSound);
+                    } else {
+                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:0.3;">');
                     }
-                    if (self.find(".aid-profile")) {
-                        var nelsonUrl = chrome.extension.getURL("img/code-conflict.png");
-
-                        if (playSound!="") {
-                            i++;
-                            console.log("conflicts: " + i);
-                            chrome.runtime.sendMessage({ type:"conflicts", text: new String(i)});
-                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;">'+ playSound);
-                            container.css("background-color", "#FA98A9");
-                        } else {
-                            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;">');
-                        }
-                    }
-                   }
+               }
             }
         );
 
