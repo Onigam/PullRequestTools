@@ -144,13 +144,18 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         var now = new Date();
         var oldRequestImgUrl = chrome.extension.getURL("img/old.png");
         var veryOldRequestImgUrl = chrome.extension.getURL("img/very-old.png");
+        var veryVeryOldRequestImgUrl = chrome.extension.getURL("img/very-very-old.png");
         prDate.setDate(prDate.getDate() + 7);
         var prMoreThanOneWeekOld = prDate < now;
         prDate.setDate(prDate.getDate() + 7);
         var prMoreThanTwoWeeksOld = prDate < now;
+        prDate.setDate(prDate.getDate() + 7);
+        var prMoreThanThreeWeeksOld = prDate < now;
         var userMerger = isUserName(merger);
         var opacity = getOpacity(userMerger);
-        if(prMoreThanTwoWeeksOld) {
+        if(prMoreThanThreeWeeksOld) {
+            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 2 weeks old" src="'+veryVeryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
+        } else if(prMoreThanTwoWeeksOld) {
             self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 2 weeks old" src="'+veryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         } else if(prMoreThanOneWeekOld) {
             self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than a week old" src="'+oldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
