@@ -98,6 +98,12 @@ var checkMigrationScriptConflict = function (migrationFileDir, sourceBranchLink,
     return result;
 }
 
+var prCount = $("#pullrequests-count");
+if (prCount.text() > 10) {
+    prCount.css({'background-color': '#FF8000', 'color': 'white'});
+} else if (prCount.text() > 20) {
+    prCount.css({'background-color': '#DF0101', 'color': 'white'});
+};
 
 $(".pullrequest-list .iterable-item").each(function(index) {
     var container = $(this);
