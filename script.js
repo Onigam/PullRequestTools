@@ -154,7 +154,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         var userMerger = isUserName(merger);
         var opacity = getOpacity(userMerger);
         if(prMoreThanThreeWeeksOld) {
-            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 2 weeks old" src="'+veryVeryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
+            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 3 weeks old" src="'+veryVeryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         } else if(prMoreThanTwoWeeksOld) {
             self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 2 weeks old" src="'+veryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         } else if(prMoreThanOneWeekOld) {
