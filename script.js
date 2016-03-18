@@ -40,7 +40,7 @@ var isUserName = function(userNameToCompareTo) {
 };
 
 var getOpacity = function(important) {
-    return important ? "1" : "0.3";
+    return important ? "1" : "0.6";
 }
 
 var checkMigrationScriptConflict = function (migrationFileDir, sourceBranchLink, sourceBranch, targetBranchLink, targetBranch, self) {
@@ -160,6 +160,17 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         } else if(prMoreThanOneWeekOld) {
             self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than a week old" src="'+oldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         }
+
+        // comment count
+        var commentElement = self.find(".flex-content--secondary .pullrequest-stats .count")[0];
+        if (commentElement) {
+            var commentCount = parseInt(commentElement.innerHTML);
+            if (commentCount > 30) {
+                var manyCommentsImgUrl = chrome.extension.getURL("img/homer-destroy.png");
+                self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR has more than 30 comments" src="'+manyCommentsImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
+            }
+        }
+
     });
 
     $.ajax(prlink).done(function(data){
