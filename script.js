@@ -99,10 +99,10 @@ var checkMigrationScriptConflict = function (migrationFileDir, sourceBranchLink,
 }
 
 var prCount = $("#pullrequests-count");
-if (prCount.text() > 10) {
-    prCount.css({'background-color': '#FF8000', 'color': 'white'});
-} else if (prCount.text() > 20) {
+if (prCount.text() > 20) {
     prCount.css({'background-color': '#DF0101', 'color': 'white'});
+} else if (prCount.text() > 10) {
+    prCount.css({'background-color': '#FF8000', 'color': 'white'});
 };
 
 $(".pullrequest-list .iterable-item").each(function(index) {
