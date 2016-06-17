@@ -111,7 +111,7 @@ var buildInfoNode = function(index) {
     return infoNode;
 }
 
-var scrapAndUpdateDom = function(author, userApproved, approveCount, mergeable, prId, prlink, self, infoNodeId, newUI) {
+var scrapAndUpdateDom = function(author, userApproved, approveCount, mergeable, prId, prlink, self, infoNodeId, newUI, container) {
 
     if (!newUI) {
         $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
@@ -248,7 +248,7 @@ $(".pull-request-row").each(function(index) {
     var execElem = self.find(".pull-request-title");
     var infoNode = buildInfoNode(index);
     infoNode.attr("style", "float:right;height:30px; margin-top: -35px;");
-    self.find(".title").append();
+    self.find(".title").append(infoNode);
 
     var prlink = execElem.attr("href");
     var prId = prlink.substring(prlink.lastIndexOf("/") + 1, prlink.length);
@@ -257,16 +257,7 @@ $(".pull-request-row").each(function(index) {
     var userApproved = approveCount > 0;
     var mergeable = approveCount > 1;
 
-    console.log("---------------------");
-    console.log("prlink : " + prlink);
-    console.log("prId : " + prId);
-    console.log("author : " + author);
-    console.log("userApproved : " + userApproved);
-    console.log("approveCount : " + approveCount);
-    console.log("mergeable : " + mergeable);
-    console.log("---------------------");
-
-    scrapAndUpdateDom(author, userApproved, approveCount, mergeable, prId, prlink, self, "info-node-"+index, true);
+    scrapAndUpdateDom(author, userApproved, approveCount, mergeable, prId, prlink, self, "info-node-"+index, true, self);
 });
 
 
@@ -286,14 +277,5 @@ $(".pullrequest-list .iterable-item").each(function(index) {
     var approveCount = container.find(".list-stat").has("a.approval-link").find(".count").html();
     var mergeable = approveCount > 1;
 
-    console.log("---------------------");
-    console.log("prlink : " + prlink);
-    console.log("prId : " + prId);
-    console.log("author : " + author);
-    console.log("userApproved : " + userApproved);
-    console.log("approveCount : " + approveCount);
-    console.log("mergeable : " + mergeable);
-    console.log("---------------------");
-
-    scrapAndUpdateDom(author, userApproved, approveCount, mergeable, prId, prlink, self, "info-node-"+index);
+    scrapAndUpdateDom(author, userApproved, approveCount, mergeable, prId, prlink, self, "info-node-"+index, false, container);
 });
