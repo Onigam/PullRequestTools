@@ -1,6 +1,6 @@
 {
 "name" :"Bitbucket conflict detector",
-"manifest_version" : 3,
+"manifest_version" : 2,
 "version" :"2.0",
 "description" :"Display wich pull request are in conflicts in the pull-requests page in Bitbucket ",
 "browser_action": {
