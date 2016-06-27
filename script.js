@@ -43,7 +43,7 @@ var getOpacity = function(important) {
     return important ? "1" : "0.6";
 }
 
-var checkMigrationScriptConflict = function (migrationFileDir, sourceBranchLink, sourceBranch, targetBranchLink, targetBranch, self) {
+var checkMigrationScriptConflict = function (migrationFileDir, sourceBranchLink, sourceBranch, targetBranchLink, targetBranch, self, infoNodeId) {
     var result = sourceBranch + " -> " + targetBranch;
 
     // Get the last commit number
@@ -85,7 +85,7 @@ var checkMigrationScriptConflict = function (migrationFileDir, sourceBranchLink,
                         var opacity = getOpacity(isUserName(conflictUserName));
                         var maggieUrl = chrome.extension.getURL("img/script-conflict.png");
                         var sqlScriptMsgTitle = scriptConflicts == 1 ? "1 SQL script to rename" : scriptConflicts + " SQL scripts to rename";
-                        self.find(".flex-content--secondary .pullrequest-stats")
+                        self.find("#"+infoNodeId)
                         .prepend('<img  title="' + sqlScriptMsgTitle + '" src="'+maggieUrl+'" style="width:57px;height:35px;margin-right:10px;opacity:' + opacity + '">');
                     }
 
@@ -105,42 +105,40 @@ if (prCount.text() > 20) {
     prCount.css({'background-color': '#FF8000', 'color': 'white'});
 };
 
-$(".pullrequest-list .iterable-item").each(function(index) {
-    var container = $(this);
-    var self = container.find(".title.flex-content--column");
-    self.css("height","35px");
-    self.find(".flex-content").css("height","35px");
-    var execElem = self.find(".flex-content--primary .execute");
-    var prlink = execElem.attr("href");
-    var prId = /^#(\d+)\:.*$/g.exec(execElem.attr("title"))[1];
-    var author = container.find("td.user a").attr("title");
-    var userApproved = container.find(".list-stat").has("a.approved").length > 0;
-    var approveCount = container.find(".list-stat").has("a.approval-link").find(".count").html();
-    var mergeable = approveCount > 1;
-    $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
-        //console.log("processing PR #" + prId);
-        var userMerger = isUserName(merger);
-        var authorApproved = false;
-        for (var i = 0; i < participants.length; i++) {
-            if (participants[i].display_name === author && participants[i].approved) {
-                authorApproved = true;
-                break;
+var buildInfoNode = function(index) {
+    var infoNode = $('<div></div>');
+    infoNode.attr("id", "info-node-"+index);
+    return infoNode;
+}
+
+var scrapAndUpdateDom = function(author, userApproved, approveCount, mergeable, prId, prlink, self, infoNodeId, newUI, container) {
+
+    if (!newUI) {
+        $.ajax('https://bitbucket.org/!api/1.0/repositories/ejust/ejust/pullrequests/' + prId + '/participants').done(function(participants){
+            //console.log("processing PR #" + prId);
+            var userMerger = isUserName(merger);
+            var authorApproved = false;
+            for (var i = 0; i < participants.length; i++) {
+                if (participants[i].display_name === author && participants[i].approved) {
+                    authorApproved = true;
+                    break;
+                }
             }
-        }
-        var approvedByMeOnly = approveCount == 1 && authorApproved;
-        var userIsAuthor = isUserName(author);
-        var homerStartedUrl = chrome.extension.getURL("img/homer-started.png");
-        var homerFinishedUrl = chrome.extension.getURL("img/homer-finished.png");
-        var homerUrl = chrome.extension.getURL("img/homer_ok.png");
-        var donutUrl = chrome.extension.getURL("img/mergeable.png");
-        var homerElement = userIsAuthor && !authorApproved ? '<img title="You must still mark your pull request ready for review" src="'+homerStartedUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:1;">'
-        : mergeable ? '<img title="Ready for review with enough validations! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;'+(userMerger?'':userApproved?'display:none;':'opacity:0.3;')+'">'
-        : userIsAuthor && approvedByMeOnly ? '<img title="Approved by me only. Somebody wants to validate? Please?" src="'+homerFinishedUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:0.3">'
-        : !userIsAuthor && authorApproved ? '<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">' : undefined;
-        if (homerElement) {
-            self.find(".flex-content--secondary .pullrequest-stats").prepend(homerElement);
-        }
-    });
+            var approvedByMeOnly = approveCount == 1 && authorApproved;
+            var userIsAuthor = isUserName(author);
+            var homerStartedUrl = chrome.extension.getURL("img/homer-started.png");
+            var homerFinishedUrl = chrome.extension.getURL("img/homer-finished.png");
+            var homerUrl = chrome.extension.getURL("img/homer_ok.png");
+            var donutUrl = chrome.extension.getURL("img/mergeable.png");
+            var homerElement = userIsAuthor && !authorApproved ? '<img title="You must still mark your pull request ready for review" src="'+homerStartedUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:1;">'
+            : mergeable ? '<img title="Ready for review with enough validations! Seems OK to merge it" src="'+donutUrl+'" style="width:35px;height:35px;margin-right:10px;'+(userMerger?'':userApproved?'display:none;':'opacity:0.3;')+'">'
+            : userIsAuthor && approvedByMeOnly ? '<img title="Approved by me only. Somebody wants to validate? Please?" src="'+homerFinishedUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:0.3">'
+            : !userIsAuthor && authorApproved ? '<img title="Ready for review" src="'+homerUrl+'" style="width:35px;height:35px;margin-right:10px;">' : undefined;
+            if (homerElement) {
+                self.find("#"+infoNodeId).prepend(homerElement);
+            }
+        });
+    }
 
     $.ajax(prlink + '/activity?_pjax=%23pr-tab-content').done(function(data) {
         // is it an old PR?
@@ -160,11 +158,11 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         var userMerger = isUserName(merger);
         var opacity = getOpacity(userMerger);
         if(prMoreThanThreeWeeksOld) {
-            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 3 weeks old" src="'+veryVeryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
+            self.find("#"+infoNodeId).prepend('<img title="PR is more than 3 weeks old" src="'+veryVeryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         } else if(prMoreThanTwoWeeksOld) {
-            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than 2 weeks old" src="'+veryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
+            self.find("#"+infoNodeId).prepend('<img title="PR is more than 2 weeks old" src="'+veryOldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         } else if(prMoreThanOneWeekOld) {
-            self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR is more than a week old" src="'+oldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
+            self.find("#"+infoNodeId).prepend('<img title="PR is more than a week old" src="'+oldRequestImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
         }
 
         // comment count
@@ -173,7 +171,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
             var commentCount = parseInt(commentElement.innerHTML);
             if (commentCount > 30) {
                 var manyCommentsImgUrl = chrome.extension.getURL("img/homer-destroy.png");
-                self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="PR has more than 30 comments" src="'+manyCommentsImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
+                self.find("#"+infoNodeId).prepend('<img title="PR has more than 30 comments" src="'+manyCommentsImgUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:' + opacity + '">');
             }
         }
 
@@ -193,7 +191,9 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         var targetBranchName = targetLinkElem.find("a").attr("title");
         var targetBranchLink = targetLinkElem.find("a").attr("href");
 
-        $.ajax(prlink + "/diff").done(
+        var diffLink = newUI ? prlink+ "/" +sourceBranchName + "/diff" : prlink + "/diff";
+
+        $.ajax(diffLink).done(
             function(data) {
                 // Check migration files
                 var fileCommitedContainer = $("#commit-files-summary", $.parseHTML(data));
@@ -215,7 +215,7 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                 });
 
                 if (migrationFileToCheck) {
-                    checkMigrationScriptConflict("/"+migrationFileDir+"/", sourceBranchLink, sourceBranchName, targetBranchLink, targetBranchName, self);
+                    checkMigrationScriptConflict("/"+migrationFileDir+"/", sourceBranchLink, sourceBranchName, targetBranchLink, targetBranchName, self, infoNodeId);
                 }
 
                 var conflictIndex = data.split("<strong>Conflict: File modified in both source and destination</strong>").length -1;
@@ -227,9 +227,9 @@ $(".pullrequest-list .iterable-item").each(function(index) {
                         conflictsNb++;
                         var playSound = '<video width="1" autoplay><source src="http://www.myinstants.com/media/sounds/the-simpsons-nelsons-haha.mp3" type="audio/mp4">p</video>';
                         chrome.runtime.sendMessage({ type:"conflicts", text: new String(conflictsNb)});
-                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;">'+ playSound);
+                        self.find("#"+infoNodeId).prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;">'+ playSound);
                     } else {
-                        self.find(".flex-content--secondary .pullrequest-stats").prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:0.3;">');
+                        self.find("#"+infoNodeId).prepend('<img title="'+conflictStr+'" src="'+nelsonUrl+'" style="width:35px;height:35px;margin-right:10px;opacity:0.3;">');
                     }
                }
             }
@@ -240,4 +240,42 @@ $(".pullrequest-list .iterable-item").each(function(index) {
         self.find(".flex-content--primary").append("<br>" + sourceBranchName + " -> " + targetBranchName);
     });
 
+}
+
+// New bitbucket ui
+$(".pull-request-row").each(function(index) {
+    var self = $(this);
+    var execElem = self.find(".pull-request-title");
+    var infoNode = buildInfoNode(index);
+    infoNode.attr("style", "float:right;height:30px; margin-top: -35px;");
+    self.find(".title").append(infoNode);
+
+    var prlink = execElem.attr("href");
+    var prId = prlink.substring(prlink.lastIndexOf("/") + 1, prlink.length);
+    var author = self.find(".pull-request-author img").attr("title");
+    var approveCount = self.find(".reviewers").has(".approved").length;
+    var userApproved = approveCount > 0;
+    var mergeable = approveCount > 1;
+
+    scrapAndUpdateDom(author, userApproved, approveCount, mergeable, prId, prlink, self, "info-node-"+index, true, self);
+});
+
+
+// Old bitbucket ui
+$(".pullrequest-list .iterable-item").each(function(index) {
+    var container = $(this);
+    var self = container.find(".title.flex-content--column");
+    self.css("height","35px");
+    self.find(".flex-content").css("height","35px");
+    var execElem = self.find(".flex-content--primary .execute");
+    self.find(".flex-content--secondary .pullrequest-stats").append(buildInfoNode(index));
+
+    var prlink = execElem.attr("href");
+    var prId = /^#(\d+)\:.*$/g.exec(execElem.attr("title"))[1];
+    var author = container.find("td.user a").attr("title");
+    var userApproved = container.find(".list-stat").has("a.approved").length > 0;
+    var approveCount = container.find(".list-stat").has("a.approval-link").find(".count").html();
+    var mergeable = approveCount > 1;
+
+    scrapAndUpdateDom(author, userApproved, approveCount, mergeable, prId, prlink, self, "info-node-"+index, false, container);
 });
