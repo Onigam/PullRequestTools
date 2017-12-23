@@ -75,16 +75,35 @@ function getPRDetailsURL(prId, apiVersion) {
   return root + REPOSITORY + '/pullrequests/' + prId;
 }
 
-function getPRActivityURL(prId) {
-  return getPRDetailsURL(prId, 2) + '/activity';
+function getPRConflictStatus(prId, callback) {
+  $.ajax(getPRDetailsURL(prId, 1) + '/conflict-status').done(callback);
 }
 
-function getPRConflictStatus(prId, callBack) {
-  $.ajax(getPRDetailsURL(prId, 1) + '/conflict-status').done(callBack);
+function getPRDetails(prId, callback) {
+  $.ajax(getPRDetailsURL(prId, 2)).done(callback);
 }
 
-function getPRCommitedFiles(prId, callBack) {
-  $.ajax(getPRDetailsURL(prId)).done(callBack);
+function getPRCommittedFiles(prId, callback) {
+
+  function diffFileLineFilter(item){
+    return item.startsWith('diff');
+  }
+  function extractFileNames(item){
+    var diffRegex = /^.* a\/(.*?) b\/(.*?)$/g;
+    var fileNames = diffRegex.exec(item);
+    return { from: fileNames[1], to: fileNames[2] };
+  }
+
+  getPRDetails(prId, function(prInfo){
+    var url = getPRDetailsURL(prInfo.id, 2) + '/diff';
+    $.ajax(url).done(function(diffPage){
+      var modifiedFiles = diffPage.split('\n')
+        .filter(diffFileLineFilter)
+        .map(extractFileNames);
+
+      callback(modifiedFiles);
+    });
+  })
 }
 
 var getOpacity = function(important) {
@@ -97,14 +116,10 @@ function getIcon(action, title, opacity) {
 }
 
 function getAgingIcon(lastActivityDate, opacity) {
-  var comparisonDate = new Date(lastActivityDate);
-  var now = new Date();
-  var prMoreThanOneWeekOld = new Date(comparisonDate.getDate() + 7) < now;
-  var prMoreThanTwoWeeksOld = new Date(comparisonDate.getDate() + 14) < now;
-  var prMoreThanThreeWeeksOld = new Date(comparisonDate.getDate() + 21) < now;
-  if(prMoreThanOneWeekOld) return getIcon('old', 'PR is more than a week old', opacity);
-  else if(prMoreThanOneWeekOld) return getIcon('very-old', 'PR is more than 2 weeks old', opacity);
-  else if(prMoreThanOneWeekOld) return getIcon('very-very-old', 'PR is more than 3 weeks old', opacity);
+  var comparisonDate = moment(lastActivityDate);
+  if(moment().subtract(3, 'weeks').isAfter(comparisonDate)) return getIcon('very-very-old', 'PR is more than 3 weeks old', opacity);
+  else if(moment().subtract(2, 'weeks').isAfter(comparisonDate)) return getIcon('very-old', 'PR is more than 2 weeks old', opacity);
+  else if(moment().subtract(1, 'weeks').isAfter(comparisonDate)) return getIcon('old', 'PR is more than a week old', opacity);
   else return;
 }
 
@@ -143,7 +158,8 @@ function processPR(pr) {
   });
 
   // Data Migration Scrits
-  getPRCommitedFiles(pr.id, console.log);
+  // list of commited Files : https://bitbucket.org/hopeitup/hopeitup/pull-requests/:id/:destinationBranchName/diff?_pjax=%23pr-tab-content
+  getPRCommittedFiles(pr.id, console.log);
   // Reviewable
 
   // Mergeable
