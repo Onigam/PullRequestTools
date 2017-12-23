@@ -1,0 +1,36 @@
+/* small interface bug*/
+.pull-requests-table tr.pull-request-row .build-status:empty,
+.pull-requests-table tr.pull-request-row .count-column-value:empty,
+.pull-requests-table tr.pull-request-row .count-column:empty,
+.pull-requests-table tr.pull-request-row .reviewers:empty {
+  width: 1%;
+}
+
+#conflict-detector-notification {
+  position: fixed;
+  border-radius: 10px;
+  bottom: 10px;
+  left: 10px;
+  background-color: rgba(0,150,0,1);
+  color: white;
+  z-index: 1000;
+  height: 20px;
+  width: auto;
+  padding: 10px;
+  text-align: center;
+  vertical-align: middle;
+  line-height:20px;
+}
+
+#pr-shared-component .conflict-detector {
+  width: 1%;
+  white-space: nowrap;
+  padding: 0;
+  text-align: right;
+}
+
+#pr-shared-component .conflict-detector > img {
+  width: 40px;
+  height:40px;
+  margin-right:10px;
+}
