@@ -83,25 +83,79 @@ function getPRDetails(prId, callback) {
   $.ajax(getPRDetailsURL(prId, 2)).done(callback);
 }
 
+function parseDiff(diff){
+  // Regex generating a 10 groups pattern
+  // 0 - Matching input
+  // 1 - if defined, the destination or source file declaration line-height
+  // 2 - the file prefix (either source "--- a" or destination "+++ b")
+  // 3 - the file name
+  // 4 - if defined, a conflict section
+  // 5 - the conflict entering separator (destination)
+  // 6 - the conflict destination file code part
+  // 7 - the conflict middle separator
+  // 8 - the conflict source file code part
+  // 9 - the conflict exiting separator (source)
+  var diffMatcher = /(^(-{3}|\+{3}) [ab]?\/(.*)$)|((^\+<{7} destination:.*$)([\s\S]*)(^\+={7}$)([\s\S]*)(^\+>{7} source:.*$))/gm
+  var stream = [];
+  var match;
+  while ((match = diffMatcher.exec(diff)) !== null) {
+    if (match.index === diffMatcher.lastIndex) {
+        diffMatcher.lastIndex++;
+    }
+    // Get the result of the next match.
+    if (match[1]) { // a new chunk is detected
+      if(match[2] === '---') { // extract modified file source
+        //console.log('new modified source file found: '+match[3]);
+        stream.push({ from: match[3] });
+      }
+      else if (match[2] === '+++') { // extract modified file destination
+        //console.log('destination file found: '+match[3]);
+        var fileDiff = stream[stream.length-1];
+        if (!fileDiff || !fileDiff.from || fileDiff.to) {
+          console.error(diff);
+          throw new Error('File diff mal formed for:' + match[3]);
+        }
+        else fileDiff.to = match[3];
+      }
+    }
+    if (match[4]) { // Conflict detected
+      //console.log('Conflict detected');
+      var fileDiff = stream[stream.length-1];
+      if (!fileDiff || !fileDiff.from || !fileDiff.to) {
+        console.error(diff);
+        throw new Error('File diff mal formed before conflict');
+      }
+      else fileDiff.conflicted = true;
+    }
+  }
+  return stream;
+}
+
 function getPRCommittedFiles(prId, callback) {
-
-  function diffFileLineFilter(item){
-    return item.startsWith('diff');
-  }
-  function extractFileNames(item){
-    var diffRegex = /^.* a\/(.*?) b\/(.*?)$/g;
-    var fileNames = diffRegex.exec(item);
-    return { from: fileNames[1], to: fileNames[2] };
-  }
-
   getPRDetails(prId, function(prInfo){
     var url = getPRDetailsURL(prInfo.id, 2) + '/diff';
     $.ajax(url).done(function(diffPage){
-      var modifiedFiles = diffPage.split('\n')
-        .filter(diffFileLineFilter)
-        .map(extractFileNames);
-
-      callback(modifiedFiles);
+      //console.log(diffPage);
+      var filesList = parseDiff(diffPage);
+      var size = filesList.length;
+      console.log('PR '+prId+' diff parsed: ('+size+' file'+ (size === 1 ? '' : 's') +' modified)');
+      filesList.forEach(function(file){
+        var NO_FILE = 'dev/null';
+        var fileName, fileStatus;
+        if (file.to === NO_FILE) {
+          fileName = file.from; fileStatus = 'D';
+        } else if (file.from === NO_FILE) {
+          fileName = file.to; fileStatus = 'A';
+        } else {
+          fileName = file.to; fileStatus = 'M';
+        }
+        console.log(fileStatus + '\t' + fileName + (file.conflicted ? ' (conflicted)' : ''))
+      });
+      //console.log(filesList.length + ' modified files in PR ' + prInfo.id);
+      var conflicts = filesList.filter(function(file){ return file.conflicted;}).length;
+      //console.log('Conflicts:' +  conflicts);
+      console.log('Conflicts found: ' + conflicts);
+      callback({ filesList: filesList, conflictsCount: conflicts });
     });
   })
 }
@@ -159,7 +213,9 @@ function processPR(pr) {
 
   // Data Migration Scrits
   // list of commited Files : https://bitbucket.org/hopeitup/hopeitup/pull-requests/:id/:destinationBranchName/diff?_pjax=%23pr-tab-content
-  getPRCommittedFiles(pr.id, console.log);
+  getPRCommittedFiles(pr.id, function(data){
+    var files = data.filesList;
+  });
   // Reviewable
 
   // Mergeable
