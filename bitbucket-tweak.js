@@ -95,7 +95,8 @@ function parseDiff(diff){
   // 7 - the conflict middle separator
   // 8 - the conflict source file code part
   // 9 - the conflict exiting separator (source)
-  var diffMatcher = /(^(-{3}|\+{3}) [ab]?\/(.*)$)|((^\+<{7} destination:.*$)([\s\S]*)(^\+={7}$)([\s\S]*)(^\+>{7} source:.*$))/gm
+  var diffMatcher = /(^(-{3}|\+{3}) [ab]?\/(.*)$)|((^\+<{7} destination:.*$)([\s\S]*)(^\+={7}$)([\s\S]*)(^\+>{7} source:.*$))/gm;
+  var NO_FILE = 'dev/null';
   var stream = [];
   var match;
   while ((match = diffMatcher.exec(diff)) !== null) {
@@ -106,7 +107,7 @@ function parseDiff(diff){
     if (match[1]) { // a new chunk is detected
       if(match[2] === '---') { // extract modified file source
         //console.log('new modified source file found: '+match[3]);
-        stream.push({ from: match[3] });
+        stream.push({ from: match[3], status: match[3] === NO_FILE ? 'A' : 'M' }); //added if source is /dev/null
       }
       else if (match[2] === '+++') { // extract modified file destination
         //console.log('destination file found: '+match[3]);
@@ -114,8 +115,10 @@ function parseDiff(diff){
         if (!fileDiff || !fileDiff.from || fileDiff.to) {
           console.error(diff);
           throw new Error('File diff mal formed for:' + match[3]);
+        } else {
+          fileDiff.to = match[3];
+          fileDiff.status = match[3] === NO_FILE ? 'D' : fileDiff.status; //deleted if destination is /dev/null
         }
-        else fileDiff.to = match[3];
       }
     }
     if (match[4]) { // Conflict detected
@@ -125,7 +128,7 @@ function parseDiff(diff){
         console.error(diff);
         throw new Error('File diff mal formed before conflict');
       }
-      else fileDiff.conflicted = true;
+      else fileDiff.status = 'C';
     }
   }
   return stream;
@@ -140,19 +143,15 @@ function getPRCommittedFiles(prId, callback) {
       var size = filesList.length;
       console.log('PR '+prId+' diff parsed: ('+size+' file'+ (size === 1 ? '' : 's') +' modified)');
       filesList.forEach(function(file){
-        var NO_FILE = 'dev/null';
         var fileName, fileStatus;
-        if (file.to === NO_FILE) {
-          fileName = file.from; fileStatus = 'D';
-        } else if (file.from === NO_FILE) {
-          fileName = file.to; fileStatus = 'A';
-        } else {
-          fileName = file.to; fileStatus = 'M';
+        switch(file.status) {
+          case 'A': fileName = file.to; break;
+          default: fileName = file.from;
         }
-        console.log(fileStatus + '\t' + fileName + (file.conflicted ? ' (conflicted)' : ''))
+        console.log(file.status + '\t' + fileName + (file.status === 'C' ? ' (conflicted)' : ''))
       });
       //console.log(filesList.length + ' modified files in PR ' + prInfo.id);
-      var conflicts = filesList.filter(function(file){ return file.conflicted;}).length;
+      var conflicts = filesList.filter(function(file){ return file.status === 'C';}).length;
       //console.log('Conflicts:' +  conflicts);
       console.log('Conflicts found: ' + conflicts);
       callback({ filesList: filesList, conflictsCount: conflicts });
