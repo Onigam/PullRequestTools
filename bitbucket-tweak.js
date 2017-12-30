@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Shows every conflict in PR list with a nice warning icon
-// @author       Mik
+// @author       pjdauvert
 // @match        https://bitbucket.org/*/*/pull-requests/
 // @grant        none
 // ==/UserScript==
@@ -47,6 +47,7 @@ var PR_COMPONENT_DATA = JSON.parse($('#pr-shared-component').attr('data-initial-
 var ALLOWED_MERGERS = ['pjdauvert', 'onigam'];
 var PR_COMMENTS_TO_GET_DESTROYED = 10;
 var MINIMUM_REVIEWS = 1;
+var SHOW_LOGS = true;
 // customization
 function getImageNameFromAction(action) {
   switch (action) {
@@ -80,12 +81,23 @@ function getPRDetailsURL(prId, apiVersion) {
   return root + REPOSITORY + '/pullrequests/' + prId;
 }
 
-function getPRConflictStatus(prId, callback) {
-  $.ajax(getPRDetailsURL(prId, 1) + '/conflict-status').done(callback);
+function getPRConflictStatus(prId) {
+  return new Promise(function(resolve){
+    $.ajax(getPRDetailsURL(prId, 1) + '/conflict-status').done(resolve);
+  });
 }
 
-function getPRDetails(prId, callback) {
-  $.ajax(getPRDetailsURL(prId, 2)).done(callback);
+function getPRDetails(prId) {
+  return new Promise(function(resolve) {
+    $.ajax(getPRDetailsURL(prId, 2)).done(resolve);
+  });
+}
+
+function getPRCommittedFiles(prId) {
+  var url = getPRDetailsURL(prId, 2) + '/diff';
+  return new Promise(function(resolve) {
+    $.ajax(url).done(resolve);
+  });
 }
 
 function parseDiff(diff){
@@ -111,11 +123,11 @@ function parseDiff(diff){
     // Get the result of the next match.
     if (match[1]) { // a new chunk is detected
       if(match[2] === '---') { // extract modified file source
-        //console.log('new modified source file found: '+match[3]);
+        // console.log('new modified source file found: '+match[3]);
         stream.push({ from: match[3], status: match[3] === NO_FILE ? 'A' : 'M' }); //added if source is /dev/null
       }
       else if (match[2] === '+++') { // extract modified file destination
-        //console.log('destination file found: '+match[3]);
+        // console.log('destination file found: '+match[3]);
         var fileDiff = stream[stream.length-1];
         if (!fileDiff || !fileDiff.from || fileDiff.to) {
           console.error(diff);
@@ -127,7 +139,7 @@ function parseDiff(diff){
       }
     }
     if (match[4]) { // Conflict detected
-      //console.log('Conflict detected');
+      // console.log('Conflict detected');
       var fileDiff = stream[stream.length-1];
       if (!fileDiff || !fileDiff.from || !fileDiff.to) {
         console.error(diff);
@@ -139,29 +151,19 @@ function parseDiff(diff){
   return stream;
 }
 
-function getPRCommittedFiles(prId, callback) {
-  getPRDetails(prId, function(prInfo){
-    var url = getPRDetailsURL(prInfo.id, 2) + '/diff';
-    $.ajax(url).done(function(diffPage){
-      //console.log(diffPage);
-      var filesList = parseDiff(diffPage);
-      var size = filesList.length;
-      console.log('PR '+prId+' diff parsed: ('+size+' file'+ (size === 1 ? '' : 's') +' modified)');
-      filesList.forEach(function(file){
-        var fileName, fileStatus;
-        switch(file.status) {
-          case 'A': fileName = file.to; break;
-          default: fileName = file.from;
-        }
-        console.log(file.status + '\t' + fileName + (file.status === 'C' ? ' (conflicted)' : ''))
-      });
-      //console.log(filesList.length + ' modified files in PR ' + prInfo.id);
-      var conflicts = filesList.filter(function(file){ return file.status === 'C';}).length;
-      //console.log('Conflicts:' +  conflicts);
-      console.log('Conflicts found: ' + conflicts);
-      callback({ filesList: filesList, conflictsCount: conflicts });
-    });
-  })
+function buildDiffDetails(diffPage) {
+  var filesList = parseDiff(diffPage);
+  filesList.forEach(function(file){
+    var fileName, fileStatus;
+    switch(file.status) {
+      case 'A': fileName = file.to; break;
+      default: fileName = file.from;
+    }
+    if(SHOW_LOGS) console.log(file.status + '\t' + fileName + (file.status === 'C' ? ' (conflicted)' : ''))
+  });
+  var conflicts = filesList.filter(function(file){ return file.status === 'C';}).length;
+  if(SHOW_LOGS) console.log('Conflicts found: ' + conflicts);
+  return { filesList: filesList, conflictsCount: conflicts };
 }
 
 var getOpacity = function(important) {
@@ -185,8 +187,8 @@ function injectIcon(prId, icon) {
     $('[data-pull-request-id="'+prId+'"] td.conflict-detector').prepend(icon);
 }
 
-function processPR(pr) {
-  console.log(pr)
+function processPRStatus(pr) {
+  if(SHOW_LOGS) console.log(pr)
   // inject recipient
   $('[data-pull-request-id="'+pr.id+'"] > td.title').after('<td class="conflict-detector"></td>');
 
@@ -196,40 +198,32 @@ function processPR(pr) {
 
   // Sooo many comments
   if(pr.comment_count > PR_COMMENTS_TO_GET_DESTROYED) {
-    injectIcon(pr.id, getIcon('destroyed', 'Breeeuuuuum!', getOpacity(pr.author.username === CURRENT_USER)));
+    injectIcon(pr.id, getIcon('destroyed', 'Breeeuuuuum!', getOpacity(pr.author === CURRENT_USER)));
   }
 
   // Conflicts
-  // API : https://bitbucket.org/!api/1.0/repositories/hopeitup/hopeitup/pullrequests/:id/conflict-status
-  getPRConflictStatus(pr.id, function(result) {
-    if(result.isconflicted){
-      injectIcon(pr.id, getIcon('code-conflict', 'This PR has conflicts', getOpacity(pr.author.username === CURRENT_USER)));
-      // Add Nelson sound and update counter in plugin icon
-      if (pr.author.username === CURRENT_USER) {
-          // update notification
-          conflictsNb++;
-          chrome.runtime.sendMessage({ type:"conflicts", text: new String(conflictsNb)});
-          var playSound = '<video width="1" autoplay><source src="http://www.myinstants.com/media/sounds/the-simpsons-nelsons-haha.mp3" type="audio/mp4"></video>';
-          injectIcon(pr.id, playSound);
-      }
+  if(pr.conflictsCount){
+    injectIcon(pr.id, getIcon('code-conflict', 'This PR has conflicts', getOpacity(pr.author === CURRENT_USER)));
+    // Add Nelson sound and update counter in plugin icon
+    if (pr.author === CURRENT_USER) {
+        // update notification
+        conflictsNb++;
+        chrome.runtime.sendMessage({ type:"conflicts", text: new String(conflictsNb)});
+        var playSound = '<video width="1" autoplay><source src="http://www.myinstants.com/media/sounds/the-simpsons-nelsons-haha.mp3" type="audio/mp4"></video>';
+        injectIcon(pr.id, playSound);
     }
-  });
-
-  // list of commited Files : https://bitbucket.org/hopeitup/hopeitup/pull-requests/:id/:destinationBranchName/diff?_pjax=%23pr-tab-content
-  getPRCommittedFiles(pr.id, function(data){
-    modifiedFiles.push({ pr: pr.id, diff: data });
-  });
+  }
 
   // Review state
-  var isAuthorApproved = pr.participants.filter(function(p){ return p.user.username === pr.author.username && p.approved }).length > 0;
-  var mustBeReviewed = pr.participants.filter(function(p){ return p.user.username !== pr.author.username && p.approved }).length < MINIMUM_REVIEWS;
+  var isAuthorApproved = pr.participants.filter(function(p){ return p.user.username === pr.author && p.approved }).length > 0;
+  var mustBeReviewed = pr.participants.filter(function(p){ return p.user.username !== pr.author && p.approved }).length < MINIMUM_REVIEWS;
   if(!isAuthorApproved) {
     injectIcon(
       pr.id,
       getIcon(
         'started',
-        pr.author.username === CURRENT_USER ? 'You must still mark your pull request ready for review' : 'The PR is not yet ready to review!',
-        getOpacity(pr.author.username === CURRENT_USER)
+        pr.author === CURRENT_USER ? 'You must still mark your pull request ready for review' : 'The PR is not yet ready to review!',
+        getOpacity(pr.author === CURRENT_USER)
       )
     );
   }
@@ -237,9 +231,9 @@ function processPR(pr) {
     injectIcon(
       pr.id,
       getIcon(
-        pr.author.username === CURRENT_USER ? 'finished' : 'ready',
+        pr.author === CURRENT_USER ? 'finished' : 'ready',
         'Ready for review',
-        getOpacity(pr.author.username !== CURRENT_USER)
+        getOpacity(pr.author !== CURRENT_USER)
       )
     );
   } else {
@@ -254,28 +248,31 @@ function processPR(pr) {
   }
 }
 
-// Generate icons
-// PR_COMPONENT_DATA.values.forEach(processPR);
-//
-// // Trans PR data check;
-// function fetchPRStatus(pr){
-//   return new Promise(function(resolve) {
-//     getPRCommittedFiles(pr.id, function(data){
-//       resolve({
-//         id: pr.id,
-//         created_on: pr.created_on,
-//         author: pr.author.username,
-//         participants: pr.participants,
-//         comment_count: pr.comment_count,
-//         conflictsCount: data.conflictsCount,
-//         filesList: data.filesList,
-//       });
-//     }
-//   });
-// }
-//
-// Promise
-//   .all(PR_COMPONENT_DATA.values.map(fetchPRStatus))
-//   .then(function(results) {
-//     results.forEach(processPRStatus);
-//   });
+// retrieve additional PR data to determine status
+function fetchPRStatus(pr){
+  return new Promise(function(resolve) {
+    return getPRCommittedFiles(pr.id)
+    .then(buildDiffDetails)
+    .then(function(data) {
+      if(SHOW_LOGS){
+        var size = data.filesList.length;
+        console.log('PR '+ pr.id +' diff parsed: ('+size+' file'+ (size === 1 ? '' : 's') +' modified)');
+      }
+      resolve({
+        id: pr.id,
+        created_on: pr.created_on,
+        author: pr.author.username,
+        participants: pr.participants,
+        comment_count: pr.comment_count,
+        conflictsCount: data.conflictsCount,
+        filesList: data.filesList,
+      });
+    });
+  });
+}
+
+Promise
+  .all(PR_COMPONENT_DATA.values.map(fetchPRStatus))
+  .then(function(results) {
+    results.forEach(processPRStatus);
+  });
