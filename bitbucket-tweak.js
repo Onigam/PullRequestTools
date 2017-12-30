@@ -51,6 +51,10 @@ var MINIMUM_REVIEWS = 1;
 function getImageNameFromAction(action) {
   switch (action) {
     //case '': return '';
+    case 'mergeable': return 'mergeable';
+    case 'started': return 'homer-started';
+    case 'finished': return 'homer-finished';
+    case 'ready': return 'homer_ok';
     case 'code-conflict': return 'code-conflict';
     case 'old': return 'old';
     case 'very-old': return 'very-old';
@@ -63,6 +67,7 @@ function getImageNameFromAction(action) {
 // Counter Initialized to Zero
 var conflictsNb = 0;
 chrome.runtime.sendMessage({ type:"conflicts", text: "0"});
+var modifiedFiles = [];
 
 // Bitbucket API scrapping
 function getPRDetailsURL(prId, apiVersion) {
@@ -210,15 +215,67 @@ function processPR(pr) {
     }
   });
 
-  // Data Migration Scrits
   // list of commited Files : https://bitbucket.org/hopeitup/hopeitup/pull-requests/:id/:destinationBranchName/diff?_pjax=%23pr-tab-content
   getPRCommittedFiles(pr.id, function(data){
-    var files = data.filesList;
+    modifiedFiles.push({ pr: pr.id, diff: data });
   });
-  // Reviewable
 
-  // Mergeable
+  // Review state
+  var isAuthorApproved = pr.participants.filter(function(p){ return p.user.username === pr.author.username && p.approved }).length > 0;
+  var mustBeReviewed = pr.participants.filter(function(p){ return p.user.username !== pr.author.username && p.approved }).length < MINIMUM_REVIEWS;
+  if(!isAuthorApproved) {
+    injectIcon(
+      pr.id,
+      getIcon(
+        'started',
+        pr.author.username === CURRENT_USER ? 'You must still mark your pull request ready for review' : 'The PR is not yet ready to review!',
+        getOpacity(pr.author.username === CURRENT_USER)
+      )
+    );
+  }
+  else if (mustBeReviewed) {
+    injectIcon(
+      pr.id,
+      getIcon(
+        pr.author.username === CURRENT_USER ? 'finished' : 'ready',
+        'Ready for review',
+        getOpacity(pr.author.username !== CURRENT_USER)
+      )
+    );
+  } else {
+    injectIcon(
+      pr.id,
+      getIcon(
+        'mergeable',
+        'Had enough validations! Seems OK to merge it :)',
+        getOpacity(ALLOWED_MERGERS.includes(CURRENT_USER))
+      )
+    );
+  }
 }
 
 // Generate icons
-PR_COMPONENT_DATA.values.forEach(processPR);
+// PR_COMPONENT_DATA.values.forEach(processPR);
+//
+// // Trans PR data check;
+// function fetchPRStatus(pr){
+//   return new Promise(function(resolve) {
+//     getPRCommittedFiles(pr.id, function(data){
+//       resolve({
+//         id: pr.id,
+//         created_on: pr.created_on,
+//         author: pr.author.username,
+//         participants: pr.participants,
+//         comment_count: pr.comment_count,
+//         conflictsCount: data.conflictsCount,
+//         filesList: data.filesList,
+//       });
+//     }
+//   });
+// }
+//
+// Promise
+//   .all(PR_COMPONENT_DATA.values.map(fetchPRStatus))
+//   .then(function(results) {
+//     results.forEach(processPRStatus);
+//   });
