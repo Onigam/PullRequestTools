@@ -45,9 +45,9 @@ var PR_COMPONENT_DATA = JSON.parse($('#pr-shared-component').attr('data-initial-
 
 // Settings
 var ALLOWED_MERGERS = ['pjdauvert', 'onigam'];
-var PR_COMMENTS_TO_GET_DESTROYED = 10;
+var PR_COMMENTS_TO_GET_DESTROYED = 20;
 var MINIMUM_REVIEWS = 1;
-var SHOW_LOGS = true;
+var SHOW_LOGS = false;
 // customization
 function getImageNameFromAction(action) {
   switch (action) {
@@ -189,15 +189,23 @@ function injectIcon(prId, icon) {
 
 function processPRStatus(pr) {
   if(SHOW_LOGS) console.log(pr)
+  //inject source branch name
+  $('[data-pull-request-id="'+pr.id+'"] > td.title > div.title-and-target-branch > a.pull-request-title')
+    .after(
+      '<span class="pull-request-source-branch"><span class="ref-label"><span class="ref branch"><span class="name">'
+      + pr.sourceBranchName
+      + '</span></span></span></span>'
+    );
+
   // inject recipient
   $('[data-pull-request-id="'+pr.id+'"] > td.title').after('<td class="conflict-detector"></td>');
 
   // PR inactivity icon :
-  var agingIcon = getAgingIcon(pr.created_on);
+  var agingIcon = getAgingIcon(pr.createdOn);
   if(agingIcon) injectIcon(pr.id, agingIcon);
 
   // Sooo many comments
-  if(pr.comment_count > PR_COMMENTS_TO_GET_DESTROYED) {
+  if(pr.commentCount > PR_COMMENTS_TO_GET_DESTROYED) {
     injectIcon(pr.id, getIcon('destroyed', 'Breeeuuuuum!', getOpacity(pr.author === CURRENT_USER)));
   }
 
@@ -248,27 +256,34 @@ function processPRStatus(pr) {
   }
 }
 
+// function to merge PR full details and files diff data
+function mergePRFullDetails(prId){
+  return function (diffData){
+    if(SHOW_LOGS){
+      var size = diffData.filesList.length;
+      console.log('PR '+ prId +' diff parsed: ('+size+' file'+ (size === 1 ? '' : 's') +' modified)');
+    }
+    return getPRDetails(prId)
+      .then(function(pr) {
+        return {
+          id: pr.id,
+          createdOn: pr.created_on,
+          author: pr.author.username,
+          participants: pr.participants,
+          commentCount: pr.comment_count,
+          sourceBranchName: pr.source.branch.name,
+          conflictsCount: diffData.conflictsCount,
+          filesList: diffData.filesList
+        };
+      });
+    };
+}
+
 // retrieve additional PR data to determine status
 function fetchPRStatus(pr){
-  return new Promise(function(resolve) {
-    return getPRCommittedFiles(pr.id)
-    .then(buildDiffDetails)
-    .then(function(data) {
-      if(SHOW_LOGS){
-        var size = data.filesList.length;
-        console.log('PR '+ pr.id +' diff parsed: ('+size+' file'+ (size === 1 ? '' : 's') +' modified)');
-      }
-      resolve({
-        id: pr.id,
-        created_on: pr.created_on,
-        author: pr.author.username,
-        participants: pr.participants,
-        comment_count: pr.comment_count,
-        conflictsCount: data.conflictsCount,
-        filesList: data.filesList,
-      });
-    });
-  });
+  return getPRCommittedFiles(pr.id)
+  .then(buildDiffDetails)
+  .then(mergePRFullDetails(pr.id));
 }
 
 Promise

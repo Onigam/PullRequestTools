@@ -6,6 +6,27 @@
   width: 1%;
 }
 
+.pull-requests-table .title-and-target-branch {
+  flex-wrap: wrap;
+}
+
+.pull-requests-table .title-and-target-branch .pull-request-title {
+  flex: 0 1 100%;
+}
+
+.pull-request-source-branch {
+  -ms-flex: 0 1 auto;
+  flex: 0 1 auto;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  max-width: 100%;
+  display: inline-block;
+  line-height: 16px;
+}
+
+
 #conflict-detector-notification {
   position: fixed;
   border-radius: 10px;
