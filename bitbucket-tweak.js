@@ -18,20 +18,15 @@ document.getElementsByTagName('head')[0].appendChild(styleElement);
 
 // notification of script execution
 var SCRIPT_ID = "conflict-detector-notification";
-var SCRIPT_MSG = "Conflict detection enabled";
-console.log("execution of following script : " + SCRIPT_ID);
+var SCRIPT_MSG = "Conflict detection enabled, loading...";
+console.log("execution of script : " + SCRIPT_ID);
 
 function hideNotif() {
     $( '#' + SCRIPT_ID ).slideUp();
 }
 $('body').append( '<div id="' + SCRIPT_ID + '" style="display:none;">' + SCRIPT_MSG + '</div>' );
 
-$('#' + SCRIPT_ID).slideDown().on('click', function() {
-    hideNotif();
-});
-setTimeout(function() {
-    hideNotif();
-}, 5000);
+$('#' + SCRIPT_ID).slideDown();
 
 // script begins here
 
@@ -290,4 +285,5 @@ Promise
   .all(PR_COMPONENT_DATA.values.map(fetchPRStatus))
   .then(function(results) {
     results.forEach(processPRStatus);
+    hideNotif();
   });
