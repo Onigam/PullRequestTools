@@ -1,0 +1,57 @@
+/* small interface bug*/
+.pull-requests-table tr.pull-request-row .build-status:empty,
+.pull-requests-table tr.pull-request-row .count-column-value:empty,
+.pull-requests-table tr.pull-request-row .count-column:empty,
+.pull-requests-table tr.pull-request-row .reviewers:empty {
+  width: 1%;
+}
+
+.pull-requests-table .title-and-target-branch {
+  flex-wrap: wrap;
+}
+
+.pull-requests-table .title-and-target-branch .pull-request-title {
+  flex: 0 1 100%;
+}
+
+.pull-request-source-branch {
+  -ms-flex: 0 1 auto;
+  flex: 0 1 auto;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  max-width: 100%;
+  display: inline-block;
+  line-height: 16px;
+}
+
+
+#conflict-detector-notification {
+  position: fixed;
+  border-radius: 10px;
+  bottom: 10px;
+  left: 10px;
+  background-color: rgba(0,150,0,1);
+  color: white;
+  z-index: 1000;
+  height: 20px;
+  width: auto;
+  padding: 10px;
+  text-align: center;
+  vertical-align: middle;
+  line-height:20px;
+}
+
+#pr-shared-component .conflict-detector {
+  width: 1%;
+  white-space: nowrap;
+  padding: 0;
+  text-align: right;
+}
+
+#pr-shared-component .conflict-detector > img {
+  width: 40px;
+  height:40px;
+  margin-right:10px;
+}
