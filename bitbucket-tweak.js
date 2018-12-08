@@ -56,6 +56,7 @@ function getImageNameFromAction(action) {
     case 'very-old': return 'very-old';
     case 'very-very-old': return 'very-very-old';
     case 'destroyed': return 'homer-destroy';
+    case 'annihilation': return 'homer-annihilation';
     default: return "unknown";
   }
 }
@@ -172,7 +173,8 @@ function getIcon(action, title, opacity) {
 
 function getAgingIcon(lastActivityDate, opacity) {
   var comparisonDate = moment(lastActivityDate);
-  if(moment().subtract(3, 'weeks').isAfter(comparisonDate)) return getIcon('very-very-old', 'PR is more than 3 weeks old', opacity);
+    if(moment().subtract(4, 'weeks').isAfter(comparisonDate)) return getIcon('annihilation', 'PR is more than 4 weeks old', opacity);
+  else if(moment().subtract(3, 'weeks').isAfter(comparisonDate)) return getIcon('very-very-old', 'PR is more than 3 weeks old', opacity);
   else if(moment().subtract(2, 'weeks').isAfter(comparisonDate)) return getIcon('very-old', 'PR is more than 2 weeks old', opacity);
   else if(moment().subtract(1, 'weeks').isAfter(comparisonDate)) return getIcon('old', 'PR is more than a week old', opacity);
   else return;
