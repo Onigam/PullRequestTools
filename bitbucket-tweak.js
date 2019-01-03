@@ -184,15 +184,39 @@ function injectIcon(prId, icon) {
     $('[data-pull-request-id="'+prId+'"] td.conflict-detector').prepend(icon);
 }
 
+function hashCode(str) { // java String#hashCode
+    var hash = 0;
+    for (var i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return hash;
+}
+
+function intToRGB(i){
+    var c = (i & 0x00AAAAAA)
+        .toString(16)
+        .toUpperCase();
+
+    return "00000".substring(0, 6 - c.length) + c;
+}
+
 function processPRStatus(pr) {
-  if(SHOW_LOGS) console.log(pr)
+  var sourceBranchColor = intToRGB(hashCode(pr.sourceBranchName));
+  var targetBranchColor = intToRGB(hashCode(pr.targetBranchName));
+
   //inject source branch name
   $('[data-pull-request-id="'+pr.id+'"] > td.title > div.title-and-target-branch > a.pull-request-title')
     .after(
-      '<span class="pull-request-source-branch"><span class="ref-label"><span class="ref branch"><span class="name">'
+      '<span class="pull-request-source-branch"><span class="ref-label" style="background-color: #' + sourceBranchColor
+        + ';"><span class="ref branch">'
+        + '<span class="name" style="color:white;">'
       + pr.sourceBranchName
       + '</span></span></span></span>'
     );
+
+  $('[data-pull-request-id="'+pr.id+'"] > td.title > div.title-and-target-branch > .pull-request-target-branch > .ref-label')
+      .css("background-color", "#" + targetBranchColor)
+  .css("color", "white");
 
   // inject recipient
   $('[data-pull-request-id="'+pr.id+'"] > td.title').after('<td class="conflict-detector"></td>');
@@ -262,6 +286,7 @@ function mergePRFullDetails(prId){
     }
     return getPRDetails(prId)
       .then(function(pr) {
+        console.log(JSON.stringify(pr));
         return {
           id: pr.id,
           createdOn: pr.created_on,
@@ -269,6 +294,7 @@ function mergePRFullDetails(prId){
           participants: pr.participants,
           commentCount: pr.comment_count,
           sourceBranchName: pr.source.branch.name,
+          targetBranchName: pr.destination.branch.name,
           conflictsCount: diffData.conflictsCount,
           filesList: diffData.filesList
         };
